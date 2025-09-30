@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Frame App - Upload & Fit</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Upload photo & fit into circular frame</h1>
+
+    <div class="controls">
+      <input id="fileInput" type="file" accept="image/*" />
+      <button id="removeBgBtn">Remove Background (server, better)</button>
+      <button id="useFallbackBtn">Use Client-Side Fallback</button>
+      <label class="hint">If server returns 402, use fallback or add REMOVE_BG_API_KEY to server .env</label>
+      <label class="hint">
+  🖱️ Drag image to move | 🔍 Scroll to zoom | Click download when ready
+</label>
+
+    </div>
+
+    <div class="workspace">
+      <canvas id="canvas"></canvas>
+      <div class="actions">
+        <button id="downloadBtn">Download Final Image</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+    </div>
+
+    <div class="info">
+      <p><strong>How it works:</strong> Upload an image → either remove.bg on server (accurate) or a simple client-side background remove → image gets centered and clipped into the circular cutout of the supplied frame (<code>frame.png</code>).</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
