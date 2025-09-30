@@ -1,62 +1,64 @@
-const express = require('express');
-const multer = require('multer');
-const fetch = require('node-fetch');
-const FormData = require('form-data');
-const fs = require('fs');
-require('dotenv').config();
+
+// server.js
+const express = require("express");
+const multer = require("multer");
+const fetch = require("node-fetch");
+require("dotenv").config();
 
 const app = express();
-const upload = multer({ dest: 'uploads/' });
 
-// Serve your frontend files from 'public' folder
-app.use(express.static('public'));
+// ✅ Use memory storage (no disk writes, works on Vercel)
+const upload = multer({ storage: multer.memoryStorage() });
 
-// API endpoint to remove background
-app.post('/api/remove-bg', upload.single('photo'), async (req, res) => {
+app.use(express.json());
+
+// Root route
+app.get("/", (req, res) => {
+  res.send("✅ Server is running");
+});
+
+// API route for background removal
+app.post("/api/remove-bg", upload.single("photo"), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).send('No file uploaded.');
+      return res.status(400).json({ error: "No file uploaded" });
     }
 
-    // Prepare form data for remove.bg API
-    const formData = new FormData();
-    formData.append('image_file', fs.createReadStream(req.file.path));
-    formData.append('size', 'auto');
+    const apiKey = process.env.REMOVE_BG_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: "REMOVE_BG_API_KEY missing in .env" });
+    }
 
-    // Call remove.bg API
-    const response = await fetch('https://api.remove.bg/v1.0/removebg', {
-      method: 'POST',
-      headers: {
-        'X-Api-Key': process.env.REMOVE_BG_API_KEY,
-        ...formData.getHeaders(),
-      },
-      body: formData,
+    // Send file buffer to remove.bg
+    const response = await fetch("https://api.remove.bg/v1.0/removebg", {
+      method: "POST",
+      headers: { "X-Api-Key": apiKey },
+      body: new URLSearchParams({
+        "image_file_b64": req.file.buffer.toString("base64"),
+        "size": "auto",
+      }),
     });
-
-    // Delete uploaded file after processing
-    fs.unlink(req.file.path, () => {});
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Remove.bg API error:', errorText);
-      return res.status(response.status).send('Failed to process image.');
+      return res.status(500).json({ error: errorText });
     }
 
-    // Get image buffer and convert to base64 data URL
     const buffer = await response.buffer();
-    const base64 = buffer.toString('base64');
 
-    // Send JSON with base64 image string
-    res.json({ image: `data:image/png;base64,${base64}` });
-
-  } catch (error) {
-    console.error('Server error:', error);
-    res.status(500).send('Something went wrong.');
+    // Convert to base64 DataURL for frontend
+    const base64Image = `data:image/png;base64,${buffer.toString("base64")}`;
+    res.json({ image: base64Image });
+  } catch (err) {
+    console.error("❌ Error:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// Start server
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+// Start server (local only, Vercel ignores this)
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+}
+
+module.exports = app;
