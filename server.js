@@ -1,4 +1,4 @@
-```js
+
 const express = require("express");
 const multer = require("multer");
 const fetch = require("node-fetch");
@@ -68,4 +68,3 @@ if (require.main === module) {
 }
 
 module.exports = app;
-```
